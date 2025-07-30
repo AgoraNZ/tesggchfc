@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Agora Ticketing Advanced</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Bootstrap -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css">
+  <style>
+    :root {
+      --main-bg: #f8faff; --primary: #001F3F; --accent: #FF851B;
+      --danger: #FF4136; --success: #2ECC40; --font-main: 'Segoe UI', Arial, sans-serif;
+      --logo-width: 210px; --max-width: 980px; --heading-size: 2rem;
+    }
+    body { background: var(--main-bg); color: var(--primary); font-family: var(--font-main);}
+    .container-main { background: #fff; border-radius: 18px; max-width: var(--max-width); margin: 32px auto 0 auto; padding: 32px 20px 34px 20px; box-shadow: 0 2px 32px #001F3F11;}
+    .logo-header { max-width: var(--logo-width); display:block; margin:0 auto 18px auto;}
+    h1 { color: var(--accent); font-size: var(--heading-size); text-align:center;}
+    .form-label { color: var(--primary); font-size: 1.08rem; font-weight:500;}
+    .form-control, .form-select { border-radius: 8px;}
+    .btn-agora { background: var(--accent); color:#fff; border:none; border-radius:5px; font-weight:500;}
+    .btn-agora:hover { background: var(--danger);}
+    .btn-admin { background: var(--primary); color:#fff; border:none; border-radius:5px;}
+    .btn-admin:hover { background: #193a5e;}
+    .btn-outline { background: #fff; color: var(--primary); border:1px solid var(--accent);}
+    .btn-outline:hover { background: var(--accent); color:#fff;}
+    .nav-btns { display:flex; gap:10px; justify-content:center; margin:16px 0 6px 0;}
+    .ticket-link { cursor:pointer; text-decoration:underline; color:var(--primary);}
+    .ticket-link:hover { color: var(--accent);}
+    .ticket-status-open { color: var(--success); font-weight:600;}
+    .ticket-status-closed { color: var(--danger);}
+    .search-box { max-width: 210px; margin: 0 0 10px 0;}
+    .logout-link { float:right; color:#a00; text-decoration:underline; cursor:pointer; font-size:0.97em;}
+    .comment-box { background: #f6f6f8; border-radius: 7px; margin-bottom: 12px; padding: 10px;}
+    .comment-meta { font-size:0.97em; color:#555;}
+    .history-box { background: #fcfcfc; border-left: 3px solid var(--accent); margin-bottom: 14px; padding: 7px 12px;}
+    .photo-thumb { max-width:80px; max-height:80px; display:inline-block; margin-right:5px;}
+    .mt-2x { margin-top:2.2rem;}
+    .csv-btn { float:right; font-size:0.9em; }
+    @media (max-width:600px) { .container-main {padding:9px 2vw;} h1{font-size:1.3rem;}.logo-header{max-width:120px;}}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+</head>
+<body>
+<div class="container-main" id="main-box">
+  <img id="logo-img" class="logo-header" style="display:none;">
+  <h1>Agora Dairy Ticketing</h1>
+  <!-- EMAIL ONLY LOGIN -->
+  <div id="login-section">
+    <div id="login-box" class="mb-3">
+      <label class="form-label">Enter Your Email</label>
+      <input type="email" id="login-user" class="form-control" autocomplete="username" required>
+      <button class="btn btn-agora mt-3 w-100" onclick="doLogin()">Continue</button>
+      <div id="login-msg" class="text-danger mt-2" style="min-height:20px;"></div>
+    </div>
+  </div>
+  <!-- MAIN TICKET PAGE -->
+  <div id="ticket-section" style="display:none;">
+    <span class="logout-link" onclick="logout()">Logout</span>
+    <div class="mb-2 text-center"><b id="user-position"></b></div>
+    <form id="ticket-form" autocomplete="off" enctype="multipart/form-data">
+      <div class="mb-2">
+        <label class="form-label">Service Person</label>
+        <input type="text" id="service-person" class="form-control" readonly>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Date</label>
+        <input type="date" id="ticket-date" class="form-control" required>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Dairy Number</label>
+        <input type="text" id="dairy-number" class="form-control" required>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Farm Name</label>
+        <input type="text" id="farm-name" class="form-control" required>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Alert Type</label>
+        <select id="alert-type" class="form-select" onchange="toggleOtherAlert()">
+          <option value="">Select...</option>
+          <option value="Temperature">Temperature</option>
+          <option value="Concentration">Concentration</option>
+          <option value="Plant Pressure">Plant Pressure</option>
+          <option value="Milking Vacuum">Milking Vacuum</option>
+          <option value="Teat Spray">Teat Spray</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="mb-2" id="other-alert-div" style="display:none;">
+        <label class="form-label">Other Alert Type</label>
+        <input type="text" id="alert-other" class="form-control">
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Priority</label>
+        <select id="priority" class="form-select">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+          <option value="Urgent">Urgent</option>
+        </select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Assign To</label>
+        <select id="assign-to" class="form-select"></select>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Description of Issue</label>
+        <textarea id="issue-desc" class="form-control" rows="2" required></textarea>
+      </div>
+      <div class="mb-2">
+        <label class="form-label">Attach Photo/File</label>
+        <input type="file" id="ticket-file" class="form-control" accept="image/*,.pdf,.doc,.docx,.txt" multiple>
+        <div id="ticket-file-preview"></div>
+      </div>
+      <button type="button" class="btn btn-agora mt-2" onclick="submitTicket()">Create Ticket</button>
+    </form>
+    <div class="nav-btns mt-2x">
+      <button class="btn btn-outline" onclick="showOpenTickets()">Open Tickets <span id="num-open-tix" class="badge bg-success"></span></button>
+      <button class="btn btn-outline" id="btn-closed-tickets" onclick="showClosedTickets()" style="display:none;">Closed Tickets</button>
+      <button class="btn btn-admin" id="btn-summary" onclick="showSummary()" style="display:none;">Summary</button>
+      <button class="btn btn-admin ms-3" id="btn-admin" onclick="adminPanel()" style="display:none;">Admin Panel</button>
+    </div>
+    <div id="ticket-msg" class="mt-2" style="min-height:22px;"></div>
+  </div>
+  <!-- TICKET VIEWS -->
+  <div id="ticket-list-section" style="display:none;">
+    <div class="mb-2">
+      <button class="btn btn-outline" onclick="backToMain()">Back</button>
+      <button class="btn btn-admin csv-btn" id="btn-csv" style="display:none;" onclick="exportToCSV()">Export All to CSV</button>
+    </div>
+    <div id="ticket-list-controls" class="mb-3"></div>
+    <div id="ticket-list-table"></div>
+    <div id="ticket-view-modal" style="display:none;" class="mt-3"></div>
+  </div>
+</div>
+<!-- Firebase for Storage Only -->
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuidv4.min.js"></script>
+<script>
+const initialUsers = [
+  { username: "regan.beaver@agora.co.nz", name: "Regan Beaver", password: "Moometrics24", role: "admin" },
+  { username: "ahren.lomas@agora.co.nz", name: "Ahren Lomas", password: "Moometrics24", role: "admin" },
+  { username: "caroline@agora.co.nz", name: "Caroline Wallace", password: "dairy123", role: "admin" },
+  { username: "kip@agora.co.nz", name: "Kip Bodle", password: "dairy123", role: "admin" },
+  { username: "josh.bull@agora.co.nz", name: "Josh Bull", password: "dairy123", role: "admin" }
+];
+if(!localStorage.getItem("users")) {
+  const saveUsers = initialUsers.map(u => ({...u, username: u.username.toLowerCase()}));
+  localStorage.setItem("users", JSON.stringify(saveUsers));
+}
+const firebaseConfig = {
+  apiKey: "AIzaSyDr9nA44Kkej*****GUzbMDECI8cTFI",
+  authDomain: "dairy-farm-record-system.firebaseapp.com",
+  projectId: "dairy-farm-record-system",
+  storageBucket: "dairy-farm-record-system.appspot.com",
+  messagingSenderId: "422124188212",
+  appId: "1:422124188212:web:1bd31bee8d6e91e301d061"
+};
+firebase.initializeApp(firebaseConfig);
+const storage = firebase.storage();
+const ticketsFolder = "Agora V1 Tickets";
+// EmailJS config
+const EMAILJS_SERVICE_ID = "service_228tpco";
+const EMAILJS_TEMPLATE_ID = "template_9s0ckye";
+const EMAILJS_PUBLIC_KEY = "8uQgECrkNStKV41S-";
+const TICKET_URL_ROOT = "https://agoranz.github.io/Ticket/";
+
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+// LOGO
+(async function(){
+  try {
+    const logoRef = storage.ref("Agora Logo/2F6-1YdaEP.jpeg");
+    const logoUrl = await logoRef.getDownloadURL();
+    document.getElementById("logo-img").src = logoUrl;
+    document.getElementById("logo-img").style.display = "block";
+  } catch {}
+})();
+
+// AUTH SECTION - Email only
+let curUser = null;
+function showMain() {
+  document.getElementById('login-section').style.display = 'none';
+  document.getElementById('ticket-section').style.display = '';
+  document.getElementById('ticket-list-section').style.display = 'none';
+  updateNavButtons();
+  autoFillTicketForm();
+  loadOpenTicketCount();
+  checkHashForTicket();
+}
+function logout() { curUser = null; location.reload(); }
+function getUsers() { return JSON.parse(localStorage.getItem("users")||"[]"); }
+function setUsers(users) { localStorage.setItem("users", JSON.stringify(users)); }
+function findUser(username) { return getUsers().find(u => u.username === username.trim().toLowerCase()); }
+function doLogin() {
+  let username = document.getElementById('login-user').value.trim().toLowerCase();
+  let user = findUser(username);
+  if(user) {
+    curUser = user;
+    showMain();
+  } else {
+    document.getElementById('login-msg').textContent = "Login failed: Email not found.";
+  }
+}
+function updateNavButtons() {
+  document.getElementById('user-position').textContent = `Position: Agora Service | ${curUser.name} (${curUser.role})`;
+  document.getElementById('btn-closed-tickets').style.display = curUser.role==="admin" ? "" : "none";
+  document.getElementById('btn-summary').style.display = curUser.role==="admin" ? "" : "none";
+  document.getElementById('btn-admin').style.display = curUser.role==="admin" ? "" : "none";
+}
+
+/* ========== Ticket Form Logic ========== */
+function autoFillTicketForm() {
+  document.getElementById('service-person').value = curUser.name;
+  document.getElementById('ticket-date').value = (new Date()).toISOString().substr(0,10);
+  // Populate assign-to dropdown
+  let users = getUsers().filter(u=>u.role!=="admin"||curUser.role==="admin");
+  let assignSel = document.getElementById('assign-to');
+  assignSel.innerHTML = '';
+  users.forEach(u=>{
+    assignSel.innerHTML += `<option value="${u.username.toLowerCase()}">${u.name}</option>`;
+  });
+  if(users.length && !assignSel.value) assignSel.value = users[0].username.toLowerCase();
+  document.getElementById('ticket-file').value = '';
+  document.getElementById('ticket-file-preview').innerHTML = '';
+}
+function toggleOtherAlert() {
+  let v = document.getElementById('alert-type').value;
+  document.getElementById('other-alert-div').style.display = v==="Other"?"":"none";
+}
+document.getElementById('ticket-file').addEventListener('change', function(){
+  let files = Array.from(this.files);
+  let div = document.getElementById('ticket-file-preview');
+  div.innerHTML = '';
+  files.forEach(f=>{
+    if(f.type.startsWith('image/')){
+      let img = document.createElement('img');
+      img.className = 'photo-thumb';
+      img.src = URL.createObjectURL(f);
+      div.appendChild(img);
+    } else {
+      let p = document.createElement('span');
+      p.textContent = f.name;
+      div.appendChild(p);
+    }
+  });
+});
+async function submitTicket() {
+  let assignedToValue = document.getElementById('assign-to').value.toLowerCase();
+  let users = getUsers();
+  let assignedUserObj = users.find(u=>u.username.toLowerCase()===assignedToValue);
+  let data = {
+    id: uuidv4(),
+    createdDate: document.getElementById('ticket-date').value,
+    dairyNumber: document.getElementById('dairy-number').value.trim(),
+    farmName: document.getElementById('farm-name').value.trim(),
+    alertType: document.getElementById('alert-type').value,
+    alertOther: document.getElementById('alert-other').value.trim(),
+    issueDesc: document.getElementById('issue-desc').value.trim(),
+    priority: document.getElementById('priority').value,
+    assignedTo: assignedToValue,
+    assignedName: assignedUserObj ? assignedUserObj.name : "",
+    status: "open",
+    openedBy: curUser.name,
+    openedByUser: curUser.username,
+    position: "Agora Service",
+    comments: [],
+    history: [{ action: "Created", user: curUser.name, date: (new Date()).toISOString(), details: "" }],
+    files: [],
+    closedBy: "", closeComment: "", closedDate: null
+  };
+  if(!data.dairyNumber||!data.farmName||!data.alertType||!data.issueDesc)
+    return (document.getElementById('ticket-msg').textContent="All required fields must be filled out.");
+  if(data.alertType==="Other" && !data.alertOther)
+    return (document.getElementById('ticket-msg').textContent="Specify the 'Other' alert type.");
+  // Handle files
+  let fileInput = document.getElementById('ticket-file');
+  let files = Array.from(fileInput.files||[]);
+  if(files.length){
+    for(let f of files){
+      let url = await uploadFileBlob(f, data.id);
+      data.files.push({ name: f.name, type: f.type, url });
+    }
+  }
+  await storage.ref(`${ticketsFolder}/${data.id}.json`).put(new Blob([JSON.stringify(data)],{type:"application/json"}));
+  document.getElementById('ticket-msg').textContent = "Ticket created.";
+  document.getElementById('ticket-form').reset();
+  autoFillTicketForm();
+  loadOpenTicketCount();
+  sendTicketEmailNotification(data);
+}
+async function uploadFileBlob(file, ticketId) {
+  let ref = storage.ref(`${ticketsFolder}/attachments/${ticketId}_${file.name}`);
+  await ref.put(file);
+  return await ref.getDownloadURL();
+}
+async function loadOpenTicketCount() {
+  let tickets = await loadAllTickets();
+  let n = tickets.filter(t=>t.status==="open").length;
+  document.getElementById('num-open-tix').textContent = n;
+}
+/* ========== TICKET LOAD/VIEW ========= */
+async function loadAllTickets() {
+  try {
+    let folderRef = storage.ref(ticketsFolder);
+    let res = await folderRef.listAll();
+    let arr = [];
+    for(let fileRef of res.items) {
+      if(fileRef.name.endsWith('.json') && !fileRef.name.startsWith('attachments/')){
+        let url = await fileRef.getDownloadURL();
+        let data = await fetch(url).then(r=>r.json());
+        arr.push(data);
+      }
+    }
+    return arr;
+  } catch { return []; }
+}
+function backToMain() {
+  showMain();
+  document.getElementById('ticket-list-table').innerHTML = "";
+  document.getElementById('ticket-list-controls').innerHTML = "";
+  document.getElementById('ticket-view-modal').style.display = "none";
+  document.getElementById('btn-csv').style.display = "none";
+}
+/* ========== Open/Closed/Summary ========= */
+async function showOpenTickets() {
+  document.getElementById('ticket-section').style.display="none";
+  document.getElementById('ticket-list-section').style.display="";
+  document.getElementById('btn-csv').style.display = curUser.role==="admin" ? "" : "none";
+  ticketFilterUI('open');
+}
+async function showClosedTickets() {
+  if(curUser.role!=="admin") return alert("Admins only.");
+  document.getElementById('ticket-section').style.display="none";
+  document.getElementById('ticket-list-section').style.display="";
+  document.getElementById('btn-csv').style.display = "";
+  ticketFilterUI('closed');
+}
+function ticketFilterUI(status) {
+  let users = getUsers();
+  let ctrl = `<input type="text" class="form-control search-box d-inline" id="filter-search" placeholder="Keyword">
+  <select id="filter-assignee" class="form-select search-box"><option value="">All Users</option>${users.map(u=>`<option value="${u.username.toLowerCase()}">${u.name}</option>`)}</select>
+  <select id="filter-priority" class="form-select search-box"><option value="">All Priority</option><option>Low</option><option>Medium</option><option>High</option><option>Urgent</option></select>
+  <input type="date" id="filter-date" class="form-control search-box">
+  <button class="btn btn-outline" onclick="filterTickets('${status}')">Filter</button>`;
+  document.getElementById('ticket-list-controls').innerHTML = ctrl;
+  document.getElementById('filter-search').onkeydown = function(e){ if(e.key=="Enter")filterTickets(status); };
+  filterTickets(status);
+}
+async function filterTickets(status) {
+  let tickets = (await loadAllTickets()).filter(t=>t.status===status);
+  let search = (document.getElementById('filter-search')||{}).value||"";
+  let assignee = (document.getElementById('filter-assignee')||{}).value||"";
+  let priority = (document.getElementById('filter-priority')||{}).value||"";
+  let date = (document.getElementById('filter-date')||{}).value||"";
+  tickets = tickets.filter(t=>
+    (!search || JSON.stringify(t).toLowerCase().includes(search.toLowerCase())) &&
+    (!assignee || t.assignedTo && t.assignedTo.toLowerCase()===assignee.toLowerCase()) &&
+    (!priority || t.priority===priority) &&
+    (!date || (t.createdDate||"").startsWith(date))
+  );
+  renderTicketTable(tickets,status==="closed");
+}
+function renderTicketTable(tickets,isClosed) {
+  if(!tickets.length) {
+    document.getElementById('ticket-list-table').innerHTML = "<i>No tickets found.</i>"; return;
+  }
+  let group = {};
+  tickets.forEach(t=>{ if(!group[t.dairyNumber]) group[t.dairyNumber]=[]; group[t.dairyNumber].push(t); });
+  let html = `<table class="table table-bordered table-sm"><thead><tr>
+    <th>Dairy #</th><th>Farm</th><th>Alert Type</th><th>Priority</th><th>Assigned</th><th>Opened By</th><th>Date</th><th>Status</th><th></th>
+    </tr></thead><tbody>`;
+  for(let dairyNum in group) {
+    group[dairyNum].forEach(t=>{
+      html += `<tr>
+        <td><span class="ticket-link" onclick="viewTicketDetails('${t.id}','${isClosed}')">${t.dairyNumber}</span></td>
+        <td>${t.farmName}</td>
+        <td>${t.alertType}${t.alertType==='Other'?": "+(t.alertOther||""):""}</td>
+        <td>${t.priority}</td>
+        <td>${t.assignedName||""}</td>
+        <td>${t.openedBy}</td>
+        <td>${t.createdDate||""}</td>
+        <td><span class="ticket-status-${t.status}">${t.status[0].toUpperCase()+t.status.slice(1)}</span></td>
+        <td>${!isClosed && curUser.role==="admin" ? `<button class="btn btn-sm btn-agora" onclick="closeTicketPrompt('${t.id}')">Close</button>` : ""}</td>
+        </tr>`;
+    });
+  }
+  html += "</tbody></table>";
+  document.getElementById('ticket-list-table').innerHTML = html;
+}
+window.viewTicketDetails = async function(id,isClosed) {
+  let tickets = await loadAllTickets();
+  let t = tickets.find(t=>t.id===id);
+  if(!t) return;
+  let html = `<h5>Ticket for #${t.dairyNumber}</h5>
+    <b>Farm Name:</b> ${t.farmName}<br>
+    <b>Alert Type:</b> ${t.alertType}${t.alertType==='Other'?": "+(t.alertOther||""):""}<br>
+    <b>Priority:</b> ${t.priority}<br>
+    <b>Assigned To:</b> ${t.assignedName||""}<br>
+    <b>Status:</b> <span class="ticket-status-${t.status}">${t.status[0].toUpperCase()+t.status.slice(1)}</span><br>
+    <b>Issue:</b> ${t.issueDesc}<br>
+    <b>Opened by:</b> ${t.openedBy} (${t.position})<br>
+    <b>Date Opened:</b> ${t.createdDate||""}<br>
+    <b>Ticket ID:</b> ${t.id}<br>`;
+  // Attached files/photos
+  if(t.files && t.files.length){
+    html += `<div class="mt-2"><b>Files:</b> `;
+    t.files.forEach(f=>{
+      if(f.type && f.type.startsWith('image/')) html += `<a href="${f.url}" target="_blank"><img src="${f.url}" class="photo-thumb"></a> `;
+      else html += `<a href="${f.url}" target="_blank">${f.name}</a> `;
+    });
+    html += `</div>`;
+  }
+  // Comments thread
+  html += `<div class="mt-2"><b>Comments:</b><br>`;
+  (t.comments||[]).forEach(c=>{
+    html += `<div class="comment-box"><div class="comment-meta">${c.user} @ ${c.date}</div>${c.text}</div>`;
+  });
+  html += `</div>`;
+  // Add comment box
+  if(t.status==="open"){
+    html += `<div class="mt-2">
+      <textarea id="new-comment" class="form-control" rows="2" placeholder="Add internal note..."></textarea>
+      <button class="btn btn-agora mt-1" onclick="addComment('${t.id}')">Add Comment</button>
+    </div>`;
+  }
+  // Ticket history
+  html += `<div class="mt-2"><b>Ticket History:</b><br>`;
+  (t.history||[]).forEach(h=>{
+    html += `<div class="history-box">${h.action} by ${h.user} @ ${h.date}${h.details?": "+h.details:""}</div>`;
+  });
+  html += `</div>`;
+  if(t.status==="closed") html+=`<b>Closed by:</b> ${t.closedBy}<br><b>Date Closed:</b> ${t.closedDate||""}<br><b>Resolution:</b> ${t.closeComment||""}<br>`;
+  document.getElementById('ticket-view-modal').innerHTML = html;
+  document.getElementById('ticket-view-modal').style.display="";
+};
+window.addComment = async function(id) {
+  let comment = document.getElementById('new-comment').value.trim();
+  if(!comment) return;
+  let tickets = await loadAllTickets();
+  let t = tickets.find(t=>t.id===id);
+  if(!t) return;
+  t.comments = t.comments||[];
+  t.comments.push({text: comment, user: curUser.name, date: (new Date()).toLocaleString()});
+  t.history = t.history||[];
+  t.history.push({action:"Comment", user:curUser.name, date:(new Date()).toISOString(), details:comment});
+  await storage.ref(`${ticketsFolder}/${t.id}.json`).put(new Blob([JSON.stringify(t)],{type:"application/json"}));
+  viewTicketDetails(id, t.status==="closed");
+};
+window.closeTicketPrompt = function(id) {
+  let comment = prompt("Describe the fix / action taken:");
+  if(!comment) return;
+  closeTicket(id, comment);
+};
+async function closeTicket(id, closeComment) {
+  let tickets = await loadAllTickets();
+  let t = tickets.find(t=>t.id===id);
+  if(!t) return;
+  t.status = "closed";
+  t.closeComment = closeComment;
+  t.closedBy = curUser.name;
+  t.closedDate = (new Date()).toISOString().substr(0,10);
+  t.history = t.history||[];
+  t.history.push({action:"Closed", user:curUser.name, date:(new Date()).toISOString(), details:closeComment});
+  await storage.ref(`${ticketsFolder}/${t.id}.json`).put(new Blob([JSON.stringify(t)],{type:"application/json"}));
+  alert("Ticket closed.");
+  showOpenTickets();
+}
+/* ========== SUMMARY/EXPORT ========== */
+async function showSummary() {
+  if(curUser.role!=="admin") return alert("Admins only.");
+  document.getElementById('ticket-section').style.display="none";
+  document.getElementById('ticket-list-section').style.display="";
+  document.getElementById('btn-csv').style.display = "";
+  let tickets = await loadAllTickets();
+  let group = {}; tickets.forEach(t=>{if(!group[t.dairyNumber])group[t.dairyNumber]=[];group[t.dairyNumber].push(t);});
+  let sorted = Object.keys(group).sort((a,b)=>group[b].length-group[a].length);
+  let alertCounts = {};
+  tickets.forEach(t=>{let type=t.alertType||"Unknown";alertCounts[type]=(alertCounts[type]||0)+1;});
+  document.getElementById('ticket-list-controls').innerHTML =
+    `<div class="mb-2"><b>Alert Type Breakdown:</b> ${Object.keys(alertCounts).map(k=>`${k}: <b>${alertCounts[k]}</b>`).join(" &nbsp; ")}</div>
+     <input type="text" class="form-control search-box d-inline" id="search-sum" placeholder="Search Dairy #">`;
+  document.getElementById('search-sum').oninput = function() {
+    let v=this.value.toLowerCase();
+    renderSummary(sorted.filter(dn=>dn.toLowerCase().includes(v)), group);
+  };
+  renderSummary(sorted, group);
+}
+function renderSummary(sorted, group) {
+  let html = `<table class="table table-bordered table-sm"><thead><tr>
+    <th>Dairy #</th><th>Num Tickets</th></tr></thead><tbody>`;
+  sorted.forEach(dn=>{
+    html += `<tr>
+      <td><span class="ticket-link" onclick="expandDairy('${dn}')">${dn}</span></td>
+      <td>${group[dn].length}</td>
+      </tr>`;
+  });
+  html += "</tbody></table>";
+  document.getElementById('ticket-list-table').innerHTML = html;
+  document.getElementById('ticket-view-modal').innerHTML = '';
+  document.getElementById('ticket-view-modal').style.display = "none";
+}
+window.expandDairy = function(dn) {
+  expandDairyTickets(dn);
+};
+async function expandDairyTickets(dn) {
+  let tickets = await loadAllTickets();
+  let arr = tickets.filter(t=>t.dairyNumber===dn);
+  arr.sort((a,b)=>(b.createdDate||"").localeCompare((a.createdDate||"")));
+  let html = `<h5>Tickets for Dairy #${dn}</h5><ul>`;
+  arr.forEach(t=>{
+    html += `<li>
+      <span class="ticket-link" onclick="viewTicketDetails('${t.id}',${t.status==="closed"})">${t.status==='closed'?'(Closed)':''} ${t.createdDate||""}
+        - ${t.alertType}${t.alertType==='Other'?": "+(t.alertOther||""):""}
+      </span>
+    </li>`;
+  });
+  html += "</ul>";
+  document.getElementById('ticket-view-modal').innerHTML = html;
+  document.getElementById('ticket-view-modal').style.display = "";
+}
+async function exportToCSV() {
+  let tickets = await loadAllTickets();
+  let header = [
+    "ID","DairyNumber","FarmName","AlertType","Priority","AssignedTo","Status",
+    "CreatedDate","ClosedDate","OpenedBy","ClosedBy",
+    "IssueDescription","CloseDescription","CommentsCount","HistoryCount"
+  ];
+  let rows = [header.join(",")];
+  tickets.forEach(t=>{
+    let row = [
+      t.id, t.dairyNumber, t.farmName, t.alertType, t.priority, t.assignedName||"", t.status,
+      t.createdDate, t.closedDate||"", t.openedBy, t.closedBy||"",
+      t.issueDesc||"", t.closeComment||"", (t.comments||[]).length, (t.history||[]).length
+    ];
+    rows.push(row.map(x=>'"'+String(x||"").replace(/"/g,'""')+'"').join(","));
+  });
+  let csv = rows.join("\r\n");
+  let blob = new Blob([csv], {type:"text/csv"});
+  let url = URL.createObjectURL(blob);
+  let a = document.createElement('a');
+  a.href = url; a.download = "tickets_export.csv";
+  document.body.appendChild(a);
+  a.click(); setTimeout(()=>{a.remove();URL.revokeObjectURL(url);},1000);
+}
+/* ========== ADMIN PANEL ========== */
+function adminPanel() {
+  if(curUser.role!=="admin") return alert("Admins only.");
+  let html = `<h5>Admin: User Permissions</h5>
+    <div class="mb-2">Promote users to Admin by username:</div>
+    <input type="text" class="form-control search-box d-inline" id="promote-user" placeholder="Username">
+    <button class="btn btn-admin mt-2 ms-2" onclick="promoteUser()">Promote to Admin</button>
+    <div class="mt-2" id="promote-msg"></div>`;
+  document.getElementById('ticket-list-controls').innerHTML = html;
+  document.getElementById('ticket-list-table').innerHTML = "";
+  document.getElementById('ticket-view-modal').innerHTML = '';
+  document.getElementById('ticket-view-modal').style.display = "none";
+}
+function promoteUser() {
+  let username = document.getElementById('promote-user').value.trim().toLowerCase();
+  let users = getUsers();
+  let user = users.find(u=>u.username.toLowerCase() === username);
+  if(!user) return document.getElementById('promote-msg').textContent = "User not found.";
+  user.role = "admin";
+  setUsers(users);
+  document.getElementById('promote-msg').textContent = "Promoted to admin.";
+}
+// ----------- EMAILJS SEND NOTIFICATION FUNCTION (WITH ALERT) -----------
+function sendTicketEmailNotification(ticket) {
+  const users = getUsers();
+  const assignUser = users.find(u=>u.username.toLowerCase() === (ticket.assignedTo||"").toLowerCase());
+  const openedUser = users.find(u=>u.username.toLowerCase() === (ticket.openedByUser||"").toLowerCase());
+  let email_to = assignUser ? assignUser.username : "";
+  let email_cc = (assignUser && openedUser && assignUser.username !== openedUser.username) ? openedUser.username : "";
+  let ticketLink = TICKET_URL_ROOT + "#ticket=" + ticket.id;
+
+  if(!email_to){
+    alert("Error sending ticket notification email. The recipient's address is empty");
+    return;
+  }
+
+  let emailVars = {
+    ticket_id: ticket.id,
+    dairy_number: ticket.dairyNumber,
+    farm_name: ticket.farmName,
+    alert_type: ticket.alertType === "Other" ? (ticket.alertType + ": " + (ticket.alertOther||"")) : ticket.alertType,
+    priority: ticket.priority,
+    assigned_to: assignUser ? assignUser.name : "",
+    opened_by: ticket.openedBy,
+    created_date: ticket.createdDate,
+    issue_desc: ticket.issueDesc,
+    ticket_link: ticketLink,
+    to_email: email_to,
+    cc_email: email_cc
+  };
+
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailVars, EMAILJS_PUBLIC_KEY)
+    .then(function(response) {
+      alert("Ticket notification email sent successfully!");
+    }, function(error) {
+      alert("Error sending ticket notification email. " + (error.text||""));
+      console.error("EmailJS send error", error);
+    });
+}
+/* ========== SUPPORT: URL Deep Linking ========== */
+window.addEventListener("hashchange", checkHashForTicket);
+function checkHashForTicket() {
+  let hash = location.hash||"";
+  if(hash.startsWith("#ticket=")) {
+    let ticketId = hash.replace("#ticket=","");
+    if(document.getElementById('ticket-section').style.display==="none")
+      showMain();
+    setTimeout(()=>{viewTicketDetails(ticketId,false);}, 100);
+  }
+}
+// --- END SCRIPT SECTION ---
+</script>
+</body>
+</html>
