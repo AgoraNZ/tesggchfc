@@ -44,7 +44,7 @@
 <body>
 <div class="container-main" id="main-box">
   <img id="logo-img" class="logo-header" style="display:none;">
-  <h1>Agora Dairy Ticketing</h1>
+  <h1 id="app-title">Agora Dairy Ticketing</h1>
   <!-- EMAIL ONLY LOGIN -->
   <div id="login-section">
     <div id="login-box" class="mb-3">
@@ -139,6 +139,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-storage-compat.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/uuid/8.3.2/uuidv4.min.js"></script>
 <script>
+// 1. USER LIST: UPDATE with your emails
 const initialUsers = [
   { username: "regan.beaver@agora.co.nz", name: "Regan Beaver", password: "Moometrics24", role: "admin" },
   { username: "ahren.lomas@agora.co.nz", name: "Ahren Lomas", password: "Moometrics24", role: "admin" },
@@ -150,8 +151,9 @@ if(!localStorage.getItem("users")) {
   const saveUsers = initialUsers.map(u => ({...u, username: u.username.toLowerCase()}));
   localStorage.setItem("users", JSON.stringify(saveUsers));
 }
+// 2. FIREBASE CONFIG: Use your original credentials!
 const firebaseConfig = {
-  apiKey: "AIzaSyDr9nA44Kkej*****GUzbMDECI8cTFI",
+  apiKey: "AIzaSyDr9nA44Kkej*****GUzbMDECI8cTFI", // <--- YOUR KEY HERE
   authDomain: "dairy-farm-record-system.firebaseapp.com",
   projectId: "dairy-farm-record-system",
   storageBucket: "dairy-farm-record-system.appspot.com",
@@ -161,7 +163,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const storage = firebase.storage();
 const ticketsFolder = "Agora V1 Tickets";
-// EmailJS config
+// 3. EmailJS config
 const EMAILJS_SERVICE_ID = "service_228tpco";
 const EMAILJS_TEMPLATE_ID = "template_9s0ckye";
 const EMAILJS_PUBLIC_KEY = "8uQgECrkNStKV41S-";
@@ -169,17 +171,22 @@ const TICKET_URL_ROOT = "https://agoranz.github.io/Ticket/";
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
-// LOGO
+// LOGO HANDLING (with fallback)
 (async function(){
   try {
     const logoRef = storage.ref("Agora Logo/2F6-1YdaEP.jpeg");
     const logoUrl = await logoRef.getDownloadURL();
     document.getElementById("logo-img").src = logoUrl;
     document.getElementById("logo-img").style.display = "block";
-  } catch {}
+    document.getElementById("app-title").style.display = "none";
+  } catch (err) {
+    // fallback if logo missing
+    document.getElementById("logo-img").style.display = "none";
+    document.getElementById("app-title").style.display = "block";
+  }
 })();
 
-// AUTH SECTION - Email only
+// --- AUTH SECTION (EMAIL ONLY) ---
 let curUser = null;
 function showMain() {
   document.getElementById('login-section').style.display = 'none';
@@ -211,7 +218,7 @@ function updateNavButtons() {
   document.getElementById('btn-admin').style.display = curUser.role==="admin" ? "" : "none";
 }
 
-/* ========== Ticket Form Logic ========== */
+// ========== Ticket Form Logic ==========
 function autoFillTicketForm() {
   document.getElementById('service-person').value = curUser.name;
   document.getElementById('ticket-date').value = (new Date()).toISOString().substr(0,10);
@@ -301,7 +308,7 @@ async function loadOpenTicketCount() {
   let n = tickets.filter(t=>t.status==="open").length;
   document.getElementById('num-open-tix').textContent = n;
 }
-/* ========== TICKET LOAD/VIEW ========= */
+// ========== TICKET LOAD/VIEW ==========
 async function loadAllTickets() {
   try {
     let folderRef = storage.ref(ticketsFolder);
@@ -324,7 +331,7 @@ function backToMain() {
   document.getElementById('ticket-view-modal').style.display = "none";
   document.getElementById('btn-csv').style.display = "none";
 }
-/* ========== Open/Closed/Summary ========= */
+// ========== Open/Closed/Summary ==========
 async function showOpenTickets() {
   document.getElementById('ticket-section').style.display="none";
   document.getElementById('ticket-list-section').style.display="";
@@ -468,7 +475,7 @@ async function closeTicket(id, closeComment) {
   alert("Ticket closed.");
   showOpenTickets();
 }
-/* ========== SUMMARY/EXPORT ========== */
+// ========== SUMMARY/EXPORT ==========
 async function showSummary() {
   if(curUser.role!=="admin") return alert("Admins only.");
   document.getElementById('ticket-section').style.display="none";
@@ -545,7 +552,7 @@ async function exportToCSV() {
   document.body.appendChild(a);
   a.click(); setTimeout(()=>{a.remove();URL.revokeObjectURL(url);},1000);
 }
-/* ========== ADMIN PANEL ========== */
+// ========== ADMIN PANEL ==========
 function adminPanel() {
   if(curUser.role!=="admin") return alert("Admins only.");
   let html = `<h5>Admin: User Permissions</h5>
@@ -567,7 +574,7 @@ function promoteUser() {
   setUsers(users);
   document.getElementById('promote-msg').textContent = "Promoted to admin.";
 }
-// ----------- EMAILJS SEND NOTIFICATION FUNCTION (WITH ALERT) -----------
+// EMAILJS SEND NOTIFICATION FUNCTION
 function sendTicketEmailNotification(ticket) {
   const users = getUsers();
   const assignUser = users.find(u=>u.username.toLowerCase() === (ticket.assignedTo||"").toLowerCase());
@@ -604,7 +611,7 @@ function sendTicketEmailNotification(ticket) {
       console.error("EmailJS send error", error);
     });
 }
-/* ========== SUPPORT: URL Deep Linking ========== */
+// SUPPORT: URL Deep Linking
 window.addEventListener("hashchange", checkHashForTicket);
 function checkHashForTicket() {
   let hash = location.hash||"";
@@ -615,7 +622,6 @@ function checkHashForTicket() {
     setTimeout(()=>{viewTicketDetails(ticketId,false);}, 100);
   }
 }
-// --- END SCRIPT SECTION ---
 </script>
 </body>
 </html>
